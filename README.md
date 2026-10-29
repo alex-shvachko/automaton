@@ -35,7 +35,7 @@ On first run, the runtime launches an interactive setup wizard — generates a w
 
 ### ChatGPT plan inference
 
-Run `node dist/index.js --chatgpt-login` and authorize ChatGPT plan usage in your browser. If Automaton has not been set up yet, the usual setup wizard runs first. The runtime selects an available model, makes a short test request, and uses your ChatGPT plan for inference on subsequent runs. Eligibility, plan limits, and model availability are controlled by OpenAI. The usual Conway account, sandbox, credits, and setup requirements remain in effect for the rest of Automaton.
+Run `node dist/index.js --chatgpt-login` and authorize ChatGPT plan usage in your browser. If Automaton has not been set up yet, the usual setup wizard runs first. The runtime selects an available model, checks a tool call and follow-up, and uses your ChatGPT plan for inference on subsequent runs. Eligibility, plan limits, and model availability are controlled by OpenAI. The usual Conway account, sandbox, credits, and setup requirements remain in effect for the rest of Automaton.
 
 The sign-in credentials are stored in `~/.automaton/chatgpt-auth.json`; treat this file as a password. The login flow refreshes the token automatically. Set `chatgptPlan` to `false` in `~/.automaton/automaton.json` to return to the existing provider routing. ChatGPT usage is managed in ChatGPT settings; Automaton's API inference cost figures do not represent ChatGPT plan usage.
 

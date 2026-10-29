@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { chatViaChatGPT, responsesInput } from "../inference/chatgpt-responses.js";
+import { chatViaChatGPT, responsesInput, verifyChatGPTProvider } from "../inference/chatgpt-responses.js";
 import { createInferenceClient } from "../conway/inference.js";
 
 vi.mock("../inference/chatgpt-auth.js", () => ({ getChatGPTAccessToken: async () => "oauth-token" }));
@@ -45,6 +45,21 @@ describe("ChatGPT Responses adapter", () => {
   it("rejects interrupted streams", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response('data: {"type":"response.created"}\n\n')));
     await expect(chatViaChatGPT("secret", "m", [])).rejects.toThrow("without completion");
+  });
+
+  it("checks a tool call and sends its result in a second request", async () => {
+    const event = (output: unknown[]) => new Response(`data: ${JSON.stringify({ type: "response.completed", response: { id: "r1", output } })}\n\n`);
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(event([{ type: "reasoning", id: "rs", summary: [], encrypted_content: "opaque" }, { type: "function_call", namespace: "automaton", call_id: "call1", name: "connection_check", arguments: "{}" }]))
+      .mockResolvedValueOnce(event([{ type: "message", content: [{ type: "output_text", text: "Success" }] }]));
+    vi.stubGlobal("fetch", fetchMock);
+    await verifyChatGPTProvider("secret", "model");
+    const input = JSON.parse(fetchMock.mock.calls[1][1].body).input;
+    expect(input.slice(-3)).toEqual([
+      { type: "reasoning", id: "rs", summary: [], encrypted_content: "opaque" },
+      { type: "function_call", namespace: "automaton", call_id: "call1", name: "connection_check", arguments: "{}" },
+      { type: "function_call_output", call_id: "call1", output: "Connection check succeeded." },
+    ]);
   });
 
   it("routes calls to the chosen ChatGPT model instead of the router's model", async () => {

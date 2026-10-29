@@ -84,3 +84,14 @@ export async function chatViaChatGPT(
     responsesOutput: calls.length ? completed.output : undefined,
   };
 }
+
+/** Verify both a tool call and the stateless follow-up without executing external actions. */
+export async function verifyChatGPTProvider(token: string, model: string): Promise<void> {
+  const tools: InferenceToolDefinition[] = [{ type: "function", function: { name: "connection_check", description: "Verify the provider connection", parameters: { type: "object", properties: {}, additionalProperties: false } } }];
+  const initial: ChatMessage = { role: "user", content: "Call the connection_check tool, then confirm it succeeded." };
+  const first = await chatViaChatGPT(token, model, [initial], tools);
+  const call = first.toolCalls?.find(item => item.function.name === "connection_check");
+  if (!call || first.toolCalls?.length !== 1) throw new Error("ChatGPT provider check did not return the expected tool call");
+  const followup = await chatViaChatGPT(token, model, [initial, { ...first.message, responsesOutput: first.responsesOutput }, { role: "tool", tool_call_id: call.id, content: "Connection check succeeded." }], tools);
+  if (!followup.message.content && !followup.toolCalls?.length) throw new Error("ChatGPT provider check returned an empty follow-up");
+}
