@@ -168,6 +168,7 @@ export function buildContextMessages(
       const msg: ChatMessage = {
         role: "assistant",
         content: turn.thinking,
+        responsesOutput: turn.toolCalls[0]?.responsesOutput,
       };
 
       // If there were tool calls, include them

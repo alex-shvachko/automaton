@@ -177,9 +177,11 @@ describe("buildContextMessages token budget", () => {
 
 describe("buildContextMessages tool result truncation", () => {
   it("preserves tool-only assistant turns and their results", () => {
-    const turn = makeTurn({ thinking: "", toolCalls: [{ id: "call_1", name: "exec", arguments: { command: "ls" }, result: "output", durationMs: 50 }] });
+    const output = [{ type: "reasoning", encrypted_content: "opaque" }];
+    const turn = makeTurn({ thinking: "", toolCalls: [{ id: "call_1", name: "exec", arguments: { command: "ls" }, result: "output", durationMs: 50, responsesOutput: output }] });
     const messages = buildContextMessages("System prompt", [turn]);
     expect(messages.find(message => message.role === "assistant")?.tool_calls?.[0].id).toBe("call_1");
+    expect(messages.find(message => message.role === "assistant")?.responsesOutput).toEqual(output);
     expect(messages.find(message => message.role === "tool")).toMatchObject({ tool_call_id: "call_1", content: "output" });
   });
 

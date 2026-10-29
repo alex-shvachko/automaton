@@ -8,6 +8,10 @@ export function responsesInput(messages: ChatMessage[]): Record<string, unknown>
       input.push({ type: "function_call_output", call_id: message.tool_call_id, output: message.content });
       continue;
     }
+    if (message.responsesOutput?.length) {
+      input.push(...message.responsesOutput);
+      continue;
+    }
     if (message.content) {
       input.push({ role: message.role === "system" ? "developer" : message.role, content: message.content });
     }
@@ -77,5 +81,6 @@ export async function chatViaChatGPT(
     toolCalls: calls.length ? calls : undefined,
     usage: { promptTokens, completionTokens, totalTokens: completed.usage?.total_tokens ?? promptTokens + completionTokens },
     finishReason: calls.length ? "tool_calls" : "stop",
+    responsesOutput: calls.length ? completed.output : undefined,
   };
 }

@@ -19,6 +19,17 @@ describe("ChatGPT Responses adapter", () => {
     ]);
   });
 
+  it("replays encrypted reasoning and tool calls in their original order", () => {
+    const output = [
+      { type: "reasoning", id: "rs_1", summary: [], encrypted_content: "encrypted" },
+      { type: "function_call", namespace: "automaton", call_id: "call1", name: "exec", arguments: "{}" },
+    ];
+    expect(responsesInput([
+      { role: "assistant", content: "", responsesOutput: output, tool_calls: [{ id: "call1", type: "function", function: { name: "exec", arguments: "{}" } }] },
+      { role: "tool", tool_call_id: "call1", content: "done" },
+    ])).toEqual([...output, { type: "function_call_output", call_id: "call1", output: "done" }]);
+  });
+
   it("translates a completed stream and sends supported request fields", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('data: {"type":"response.completed","response":{"id":"r1","model":"m","output":[{"type":"message","content":[{"type":"output_text","text":"hello"}]},{"type":"function_call","call_id":"c1","name":"exec","arguments":"{}"}],"usage":{"input_tokens":2,"output_tokens":3,"total_tokens":5}}}\n\n'));
     vi.stubGlobal("fetch", fetchMock);

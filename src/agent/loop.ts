@@ -600,8 +600,10 @@ export async function runAgentLoop(
       log(config, `[THINK] Routing inference (tier: ${survivalTier}, model: ${inference.getDefaultModel()})...`);
 
       const inferenceTools = toolsToInferenceFormat(tools);
+      let responsesOutput: Record<string, unknown>[] | undefined;
       const routerResult = config.chatgptPlan ? await (async () => {
         const result = await inference.chat(messages, { tools: inferenceTools });
+        responsesOutput = result.responsesOutput;
         return { content: result.message.content, toolCalls: result.toolCalls,
           inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens,
           costCents: 0, finishReason: result.finishReason };
@@ -690,6 +692,10 @@ export async function runAgentLoop(
       }
 
       // ── Persist Turn (atomic: turn + tool calls + inbox ack) ──
+      if (responsesOutput && turn.toolCalls.length) {
+        const executed = new Set(turn.toolCalls.map(call => call.id));
+        turn.toolCalls[0].responsesOutput = responsesOutput.filter(item => item.type !== "function_call" || executed.has(String(item.call_id)));
+      }
       const claimedIds = claimedMessages.map((m) => m.id);
       db.runTransaction(() => {
         db.insertTurn(turn);

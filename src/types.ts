@@ -130,6 +130,7 @@ export interface ToolCallResult {
   result: string;
   durationMs: number;
   error?: string;
+  responsesOutput?: Record<string, unknown>[];
 }
 
 export interface TokenUsage {
@@ -316,6 +317,7 @@ export interface ChatMessage {
   name?: string;
   tool_calls?: InferenceToolCall[];
   tool_call_id?: string;
+  responsesOutput?: Record<string, unknown>[];
 }
 
 export interface InferenceToolCall {
@@ -334,6 +336,7 @@ export interface InferenceResponse {
   toolCalls?: InferenceToolCall[];
   usage: TokenUsage;
   finishReason: string;
+  responsesOutput?: Record<string, unknown>[];
 }
 
 export interface InferenceOptions {
