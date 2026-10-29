@@ -84,6 +84,9 @@ Environment:
     const { loginChatGPT, getChatGPTModel } = await import("./inference/chatgpt-auth.js");
     await loginChatGPT();
     const model = await getChatGPTModel();
+    const { getChatGPTAccessToken } = await import("./inference/chatgpt-auth.js");
+    const { chatViaChatGPT } = await import("./inference/chatgpt-responses.js");
+    await chatViaChatGPT(await getChatGPTAccessToken(), model, [{ role: "user", content: "Reply with OK." }]);
     config.chatgptPlan = true;
     config.inferenceModel = model;
     saveConfig(config);
