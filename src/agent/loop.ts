@@ -600,7 +600,12 @@ export async function runAgentLoop(
       log(config, `[THINK] Routing inference (tier: ${survivalTier}, model: ${inference.getDefaultModel()})...`);
 
       const inferenceTools = toolsToInferenceFormat(tools);
-      const routerResult = await inferenceRouter.route(
+      const routerResult = config.chatgptPlan ? await (async () => {
+        const result = await inference.chat(messages, { tools: inferenceTools });
+        return { content: result.message.content, toolCalls: result.toolCalls,
+          inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens,
+          costCents: 0, finishReason: result.finishReason };
+      })() : await inferenceRouter.route(
         {
           messages: messages,
           taskType: "agent_turn",

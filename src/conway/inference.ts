@@ -25,6 +25,7 @@ interface InferenceClientOptions {
   maxTokens: number;
   lowComputeModel?: string;
   openaiApiKey?: string;
+  chatgptModel?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
   /** Optional registry lookup — if provided, used before name heuristics */
@@ -61,6 +62,13 @@ export function createInferenceClient(
     messages: ChatMessage[],
     opts?: InferenceOptions,
   ): Promise<InferenceResponse> => {
+    if (options.chatgptModel) {
+      const [{ getChatGPTAccessToken }, { chatViaChatGPT }] = await Promise.all([
+        import("../inference/chatgpt-auth.js"),
+        import("../inference/chatgpt-responses.js"),
+      ]);
+      return chatViaChatGPT(await getChatGPTAccessToken(), options.chatgptModel, messages, opts?.tools);
+    }
     const model = opts?.model || currentModel;
     const tools = opts?.tools;
 
@@ -144,7 +152,7 @@ export function createInferenceClient(
   };
 
   const getDefaultModel = (): string => {
-    return currentModel;
+    return options.chatgptModel || currentModel;
   };
 
   return {

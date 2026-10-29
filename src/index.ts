@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 import { getWallet, getAutomatonDir } from "./identity/wallet.js";
 import { provision, loadApiKeyFromConfig } from "./identity/provision.js";
-import { loadConfig, resolvePath } from "./config.js";
+import { loadConfig, resolvePath, saveConfig } from "./config.js";
 import { createDatabase } from "./state/database.js";
 import { createConwayClient } from "./conway/client.js";
 import { createInferenceClient } from "./conway/inference.js";
@@ -62,6 +62,7 @@ Usage:
   automaton --pick-model   Interactively pick the active inference model
   automaton --init         Initialize wallet and config directory
   automaton --provision    Provision Conway API key via SIWE
+  automaton --chatgpt-login Sign in and enable ChatGPT plan inference
   automaton --status       Show current automaton status
   automaton --version      Show version
   automaton --help         Show this help
@@ -72,6 +73,22 @@ Environment:
   OLLAMA_BASE_URL          Ollama base URL (overrides config, e.g. http://localhost:11434)
 `);
     process.exit(0);
+  }
+
+  if (args.includes("--chatgpt-login")) {
+    let config = loadConfig();
+    if (!config) {
+      const { runSetupWizard } = await import("./setup/wizard.js");
+      config = await runSetupWizard();
+    }
+    const { loginChatGPT, getChatGPTModel } = await import("./inference/chatgpt-auth.js");
+    await loginChatGPT();
+    const model = await getChatGPTModel();
+    config.chatgptPlan = true;
+    config.inferenceModel = model;
+    saveConfig(config);
+    console.log(`ChatGPT inference enabled with ${model}.`);
+    return;
   }
 
   if (args.includes("--init")) {
@@ -291,6 +308,7 @@ async function run(): Promise<void> {
     maxTokens: config.maxTokensPerTurn,
     lowComputeModel: config.modelStrategy?.lowComputeModel || "gpt-5-mini",
     openaiApiKey: config.openaiApiKey,
+    chatgptModel: config.chatgptPlan ? config.inferenceModel : undefined,
     anthropicApiKey: config.anthropicApiKey,
     ollamaBaseUrl,
     getModelProvider: (modelId) => modelRegistry.get(modelId)?.provider,

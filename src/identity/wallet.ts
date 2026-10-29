@@ -13,6 +13,7 @@ import nacl from "tweetnacl";
 import bs58 from "bs58";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import type { WalletData } from "../types.js";
 import type { ChainType } from "./chain.js";
 import { EvmChainIdentity, SolanaChainIdentity } from "./chain.js";
@@ -42,7 +43,7 @@ function createSolanaStubAccount(solanaAddress: string): PrivateKeyAccount {
 }
 
 const AUTOMATON_DIR = path.join(
-  process.env.HOME || "/root",
+  process.env.HOME || os.homedir(),
   ".automaton",
 );
 const WALLET_FILE = path.join(AUTOMATON_DIR, "wallet.json");

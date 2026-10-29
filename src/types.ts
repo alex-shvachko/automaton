@@ -50,6 +50,7 @@ export interface AutomatonConfig {
   conwayApiUrl: string;
   conwayApiKey: string;
   openaiApiKey?: string;
+  chatgptPlan?: boolean;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
   inferenceModel: string;
