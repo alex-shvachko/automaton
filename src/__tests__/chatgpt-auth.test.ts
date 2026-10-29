@@ -13,6 +13,22 @@ beforeEach(() => { context.dir = fs.mkdtempSync(path.join(os.tmpdir(), "automato
 afterEach(() => { vi.unstubAllGlobals(); fs.rmSync(context.dir, { recursive: true, force: true }); });
 
 describe("ChatGPT authentication", () => {
+  it("stops on declined consent without exchanging or saving credentials", async () => {
+    const realFetch = globalThis.fetch;
+    context.open = (url) => {
+      const authUrl = new URL(url);
+      const callback = new URL(authUrl.searchParams.get("redirect_uri")!);
+      callback.searchParams.set("state", authUrl.searchParams.get("state")!);
+      callback.searchParams.set("error", "access_denied");
+      void realFetch(callback);
+    };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(loginChatGPT()).rejects.toThrow("access_denied");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(context.dir, "chatgpt-auth.json"))).toBe(false);
+  });
+
   it("completes PKCE login and persists only validated credentials", async () => {
     const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
     const jwk = { ...publicKey.export({ format: "jwk" }), kid: "test", alg: "RS256" };
