@@ -16,6 +16,7 @@ import {
   summarizeTurns,
 } from "../agent/context.js";
 import { DEFAULT_TOKEN_BUDGET } from "../types.js";
+import { responsesInput } from "../inference/chatgpt-responses.js";
 import type { AgentTurn, TokenBudget } from "../types.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
 import {
@@ -183,6 +184,19 @@ describe("buildContextMessages tool result truncation", () => {
     expect(messages.find(message => message.role === "assistant")?.tool_calls?.[0].id).toBe("call_1");
     expect(messages.find(message => message.role === "assistant")?.responsesOutput).toEqual(output);
     expect(messages.find(message => message.role === "tool")).toMatchObject({ tool_call_id: "call_1", content: "output" });
+  });
+
+  it("replays stored reasoning and a tool result after a database round trip", () => {
+    const db = createTestDb();
+    try {
+      const output = [
+        { type: "reasoning", id: "rs_1", summary: [], encrypted_content: "opaque" },
+        { type: "function_call", namespace: "automaton", call_id: "call_1", name: "exec", arguments: "{}" },
+      ];
+      db.insertTurn(makeTurn({ thinking: "", toolCalls: [{ id: "call_1", name: "exec", arguments: {}, result: "done", durationMs: 2, responsesOutput: output }] }));
+      const input = responsesInput(buildContextMessages("rules", db.getRecentTurns(1)));
+      expect(input.slice(-3)).toEqual([...output, { type: "function_call_output", call_id: "call_1", output: "done" }]);
+    } finally { db.close(); }
   });
 
   it("truncates large tool results in context messages", () => {
